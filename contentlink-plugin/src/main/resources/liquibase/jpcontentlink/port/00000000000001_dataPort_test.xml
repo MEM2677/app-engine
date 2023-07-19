@@ -1,0 +1,17 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+           http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.4.xsd">
+
+    <changeSet id="00000000000001_jpmail_dataPort_test" author="entando" context="test">
+        <insert tableName="sysconfig">
+            <column name="version" value="test" />
+            <column name="item" value="jpcontentlink_config" />
+            <column name="descr" value="Configurazione del servizio di referenze contenuti" />
+            <column name="config" valueClobFile="clob/test/sysconfig_1.xml" />
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component>
+	<code>jpcontentlink</code>
+	<description>Content cross reference</description>
+	<dependencies>
+		<code>jacms</code>
+	</dependencies>
+    <installation>
+        <liquibase>
+            <changeSet datasource="portDataSource" changeLogFile="classpath:liquibase/jpcontentlink/changeSetPort.xml" />
+        </liquibase>
+    </installation>
+</component>
