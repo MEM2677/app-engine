@@ -27,6 +27,7 @@
         <module>contentscheduler-plugin</module>
         <module>solr-plugin</module>
         <module>webapp</module>
+        <module>contentlink-plugin</module>
     </modules>
 
     <name>Entando App Engine Parent POM</name>
