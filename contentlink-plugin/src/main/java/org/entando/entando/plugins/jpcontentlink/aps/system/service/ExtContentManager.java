@@ -57,14 +57,9 @@ public class ExtContentManager extends ContentManager {
      */
     @Override
     public Content loadContent(String id, boolean onLine) throws EntException {
-        Content content = null;
+        Content content;
 
-        try {
-            content = getContentSimple(id, onLine);
-        } catch (EntException e) {
-            // already traced
-            throw e;
-        }
+        content = getContentSimple(id, onLine);
 
         try {
             SingleMappingConfig mapping = contentlinkManager
@@ -104,7 +99,7 @@ public class ExtContentManager extends ContentManager {
             } else if (!contentlinkManager.getConfiguration().isEnabled()) {
                 logger.debug("content linking disables as requested");
             } else if (mapping == null) {
-                logger.debug("no mapping found for ", content.getTypeCode());
+                logger.debug("no mapping found for '{}'", content.getTypeCode());
             } else if (!mapping.isActive()) {
                 logger.debug("content type linking disabled for type '{}'", content.getTypeCode());
             } else {
@@ -142,7 +137,8 @@ public class ExtContentManager extends ContentManager {
                     } else if (dstAttribute instanceof NumberAttribute) {
                         processNumberAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
                     }else {
-                        // not supported
+                        // attribute not supported
+                        logger.warn("unsupported attribute type for linking '{}'", dstAttribute.getType());
                     }
                 } else {
                     logger.debug("attribute '{}' does not exist for content type '{}'",
@@ -170,9 +166,8 @@ public class ExtContentManager extends ContentManager {
         // does the src attribute exist?
         if (srcAttribute != null) {
             if (srcAttribute instanceof TextAttribute) {
-                HashMap<String, String> testMap = new HashMap<>();
                 // get the text for every language
-                testMap.putAll(((TextAttribute) srcAttribute).getTextMap());
+                HashMap<String, String> testMap = new HashMap<>(((TextAttribute) srcAttribute).getTextMap());
                 // update the attribute
                 ((TextAttribute)dstAttribute).setTextMap(testMap);
                 logger.debug("TEXT copy completed successfully");
@@ -218,24 +213,19 @@ public class ExtContentManager extends ContentManager {
         if (srcAttribute != null) {
             if (srcAttribute instanceof ImageAttribute) {
 
-                ((ImageAttribute) srcAttribute).getResources().forEach((k, v) -> {
-                    ((ImageAttribute) dstAttribute).setResource(v, k);
-                });
+                ((ImageAttribute) srcAttribute).getResources().forEach((k, v) -> ((ImageAttribute) dstAttribute).setResource(v, k));
 
-                Map<String, String> altMap = new HashMap<>();
-                altMap.putAll(((ImageAttribute) srcAttribute).getResourceAltMap());
+                Map<String, String> altMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceAltMap());
                 ((ImageAttribute) dstAttribute).setMetadataMap("alt", altMap);
 
-                Map<String, String> descrMap = new HashMap<>();
-                descrMap.putAll(((ImageAttribute) srcAttribute).getResourceDescriptionMap());
+                Map<String, String> descrMap = new HashMap<>(
+                        ((ImageAttribute) srcAttribute).getResourceDescriptionMap());
                 ((ImageAttribute) dstAttribute).setMetadataMap("description", descrMap);
 
-                Map<String, String> legendMap = new HashMap<>();
-                legendMap.putAll(((ImageAttribute) srcAttribute).getResourceLegendMap());
+                Map<String, String> legendMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceLegendMap());
                 ((ImageAttribute) dstAttribute).setMetadataMap("legend", legendMap);
 
-                Map<String, String> titleMap = new HashMap<>();
-                titleMap.putAll(((ImageAttribute) srcAttribute).getResourceTitleMap());
+                Map<String, String> titleMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceTitleMap());
                 ((ImageAttribute) dstAttribute).setMetadataMap("title", titleMap);
 
                 logger.debug("IMAGE copy completed successfully");
