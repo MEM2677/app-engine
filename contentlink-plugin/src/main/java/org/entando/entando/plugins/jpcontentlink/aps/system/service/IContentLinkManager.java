@@ -1,14 +1,16 @@
 package org.entando.entando.plugins.jpcontentlink.aps.system.service;
 
 import com.agiletec.plugins.jacms.aps.system.services.content.model.Content;
+import java.util.Optional;
 import org.entando.entando.ent.exception.EntException;
 import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.SingleMappingConfig;
 
 public interface IContentLinkManager {
     String BEAN_ID = "jpcontentlinkManager";
     String CONFIG_ITEM = "jpcontentlink_config";
 
-    Content processContent(Content content) throws EntException;
+    Optional<SingleMappingConfig> getMappingByContentType(String type);
 
     /**
      * Export the configuration

@@ -1,16 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <ContentLinkConfig>
-	<active>false</active>
+	<enabled>true</enabled>
 	<contentTypes>
 		<contentTypes>
 			<targetContentType>EVN</targetContentType>
 			<linkedContentType>PPL</linkedContentType>
-			<linkingAttribute>title</linkingAttribute>
+			<linkingAttribute>reflink</linkingAttribute>
 			<active>true</active>
 			<mapping>
-				<targetTitle>linkedTitle</targetTitle>
-				<targetImg>linkedImg</targetImg>
-				<targetDate>linkedDate</targetDate>
+				<tgttitle>lkdtitle</tgttitle>
+				<tgtimg>lkdimg</tgtimg>
+				<tgtdate>lkddate</tgtdate>
+				<tgtnumber>lkdnumber</tgtnumber>
+				<tgtmntxt>lkdmntxt</tgtmntxt>
 			</mapping>
 		</contentTypes>
 	</contentTypes>

@@ -31,9 +31,9 @@ public class TestConfiguration {
         sm.getMapping().put("targetDate", "linkedDate");
         sm.getMapping().put("targetImg", "linkedImg");
 
-        lk.contentTypes = new ArrayList<>();
-        lk.contentTypes.add(sm);
-        lk.setActive(true);
+        lk.setContentTypes(new ArrayList<>());
+        lk.getContentTypes().add(sm);
+        lk.setEnabled(true);
 
         return lk;
     }

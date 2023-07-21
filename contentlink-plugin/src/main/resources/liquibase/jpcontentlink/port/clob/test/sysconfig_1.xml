@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ContentLinkConfig>
-	<active>true</active>
+	<enabled>true</enabled>
 	<contentTypes>
 		<contentTypes>
 			<targetContentType>EVN</targetContentType>
+			<linkedContentType>PPL</linkedContentType>
+			<linkingAttribute>title</linkingAttribute>
+			<active>false</active>
+			<mapping>
+				<targetTitle>linkedTitle</targetTitle>
+				<targetImg>linkedImg</targetImg>
+				<targetDate>linkedDate</targetDate>
+			</mapping>
+		</contentTypes>
+		<contentTypes>
+			<targetContentType>PLC</targetContentType>
 			<linkedContentType>PPL</linkedContentType>
 			<linkingAttribute>title</linkingAttribute>
 			<active>true</active>

@@ -8,9 +8,19 @@ import com.agiletec.plugins.jacms.aps.system.services.content.model.Content;
 import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
 import org.entando.entando.web.AbstractControllerIntegrationTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.web.WebAppConfiguration;
 
-
+@ExtendWith({SpringExtension.class})
+@ContextConfiguration(
+        locations = {
+                "classpath*:spring/custom/**.xml"
+        }
+)
+@WebAppConfiguration("")
 public class TestContentLinkManager extends AbstractControllerIntegrationTest {
 
     @Autowired
@@ -23,12 +33,7 @@ public class TestContentLinkManager extends AbstractControllerIntegrationTest {
     void testLoadedConfiguration() throws Throwable {
         ContentLinkConfig cfg = contentLinkManager.getConfiguration();
         assertNotNull(cfg);
-        assertTrue(cfg.isActive());
-    }
-    @Test
-    void testManager() throws  Throwable {
-        Content content = contentManager.loadContent("ART102", false);
-        System.out.println(">>> " + content.getId());
+        assertTrue(cfg.isEnabled());
     }
 
 }
