@@ -90,7 +90,12 @@ public class ExtContentManager extends ContentManager {
                     SymbolicLink link = ((LinkAttribute) targetAttribute).getSymbolicLink();
                     String referencedContentId = link.getContentDestination();
 
-                    importReferencedContentAttributes(content, referencedContentId, mapping);
+                    if (StringUtils.isNotBlank(referencedContentId)
+                            && referencedContentId.startsWith(mapping.getLinkedContentType())) {
+                        importReferencedContentAttributes(content, referencedContentId, mapping);
+                    } else {
+                        logger.debug("unexpected content type for content {}, ignoring", referencedContentId);
+                    }
                 } else {
                     // TODO add monolist of link support
                     throw new RuntimeException("Unsupported link attribute type "
@@ -120,7 +125,7 @@ public class ExtContentManager extends ContentManager {
 
             // process attributes
             config.getMapping().forEach( (dstAttributeName, srcAttributeName) -> {
-                logger.error("attribute '{}' of content type {}",
+                logger.debug("attribute '{}' of content type {}",
                         dstAttributeName, srcContent.getTypeCode());
                 // get the attribute to fill
                 AttributeInterface dstAttribute = dstContent.getAttribute(dstAttributeName);
@@ -140,7 +145,7 @@ public class ExtContentManager extends ContentManager {
                         // not supported
                     }
                 } else {
-                    logger.error("attribute '{}' does not exist for content type '{}'",
+                    logger.debug("attribute '{}' does not exist for content type '{}'",
                             dstAttributeName, dstContent.getTypeCode());
                 }
             });
