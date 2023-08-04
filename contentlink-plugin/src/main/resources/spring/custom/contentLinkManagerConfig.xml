@@ -7,6 +7,8 @@
     <bean id="jpcontentlinkManager" class="org.entando.entando.plugins.jpcontentlink.aps.system.service.ContentLinkManager"
             parent="abstractService">
         <property name="configManager" ref="BaseConfigManager"/>
+        <property name="contentService" ref="jacmsContentService"/>
+        <property name="cacheInfoManager" ref="CacheInfoManager" />
     </bean>
 
     <bean id="jacmsContentManager" class="org.entando.entando.plugins.jpcontentlink.aps.system.service.ExtContentManager"

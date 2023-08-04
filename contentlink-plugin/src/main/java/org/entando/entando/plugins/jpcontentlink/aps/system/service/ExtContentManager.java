@@ -63,7 +63,7 @@ public class ExtContentManager extends ContentManager {
 
         try {
             SingleMappingConfig mapping = contentlinkManager
-                    .getMappingByContentType(content.getTypeCode())
+                    .getMappingConfigurationByReferencingContentType(content.getTypeCode())
                     .orElse(null);
 
             if (contentlinkManager.getConfiguration().isEnabled()
