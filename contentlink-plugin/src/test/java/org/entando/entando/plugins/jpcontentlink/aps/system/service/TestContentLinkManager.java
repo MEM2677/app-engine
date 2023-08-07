@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.agiletec.plugins.jacms.aps.system.services.content.IContentManager;
-import com.agiletec.plugins.jacms.aps.system.services.content.model.Content;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.IContentLinkManager;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.ContentLinkConfig;
 import org.entando.entando.web.AbstractControllerIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

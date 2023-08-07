@@ -1,48 +1,43 @@
-package org.entando.entando.plugins.jpcontentlink.aps.system.service;
+package org.entando.entando.plugins.jpcontentlink.aps.system.service.link;
 
 import com.agiletec.aps.system.common.AbstractService;
-import com.agiletec.aps.system.common.entity.model.attribute.AttributeInterface;
-import com.agiletec.aps.system.common.entity.model.attribute.MonoListAttribute;
 import com.agiletec.aps.system.services.baseconfig.ConfigInterface;
 import com.agiletec.plugins.jacms.aps.system.JacmsSystemConstants;
-import com.agiletec.plugins.jacms.aps.system.services.content.IContentManager;
 import com.agiletec.plugins.jacms.aps.system.services.content.event.PublicContentChangedEvent;
 import com.agiletec.plugins.jacms.aps.system.services.content.event.PublicContentChangedObserver;
-import com.agiletec.plugins.jacms.aps.system.services.content.model.Content;
 import com.agiletec.plugins.jacms.aps.system.services.content.model.ContentDto;
-import com.agiletec.plugins.jacms.aps.system.services.content.model.SymbolicLink;
-import com.agiletec.plugins.jacms.aps.system.services.content.model.attribute.LinkAttribute;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.entando.entando.aps.system.services.cache.ICacheInfoManager;
-import org.entando.entando.ent.exception.EntException;
 import org.entando.entando.plugins.jacms.aps.system.services.content.ContentServiceUtilizer;
 import org.entando.entando.plugins.jacms.aps.system.services.content.IContentService;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.SingleMappingConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.ContentLinkConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.SingleMappingConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /*
-<?xml version="1.0" encoding="UTF-8"?>
 <ContentLinkConfig>
-   <enabled>true</enabled>
-   <contentTypes>
-      <contentTypes>
-         <targetContentType>EVN</targetContentType>
-         <linkedContentType>PPL</linkedContentType>
-         <linkingAttribute>title</linkingAttribute>
-         <active>true</active>
-         <mapping>
-            <targetTitle>linkedTitle</targetTitle>
-            <targetImg>linkedImg</targetImg>
-            <targetDate>linkedDate</targetDate>
-         </mapping>
-      </contentTypes>
-   </contentTypes>
+	<enabled>true</enabled>
+	<contentTypes>
+		<contentTypes>
+			<targetContentType>EVN</targetContentType>
+			<linkedContentType>PPL</linkedContentType>
+			<linkingAttribute>reflist</linkingAttribute>
+			<targetList>tgtlist</targetList>
+			<active>true</active>
+			<mapping>
+				<tgttitle>lkdtitle</tgttitle>
+				<tgtimg>lkdimg</tgtimg>
+				<tgtdate>lkddate</tgtdate>
+				<tgtnumber>lkdnumber</tgtnumber>
+				<tgtmntxt>lkdmntxt</tgtmntxt>
+			</mapping>
+		</contentTypes>
+	</contentTypes>
 </ContentLinkConfig>
  */
 
@@ -122,7 +117,6 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
                 checkIfReferencedContent(event.getContent().getId(), event.getContent().getTypeCode());
                 break;
         }
-
     }
 
     private void checkIfReferencedContent(String contentId, String contentType) {
@@ -140,7 +134,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
     }
 
     protected void evictContent(String contentId) {
-        logger.info("evicting content {} from cache", contentId);
+        logger.debug("evicting content {} from cache", contentId);
 
         this.getCacheInfoManager().flushGroup(
                 ICacheInfoManager.DEFAULT_CACHE_NAME, JacmsSystemConstants.CONTENT_CACHE_GROUP_PREFIX + contentId);

@@ -1,8 +1,8 @@
-package org.entando.entando.plugins.jpcontentlink.aps.system.service;
+package org.entando.entando.plugins.jpcontentlink.aps.system.service.link;
 
 import java.util.Optional;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.SingleMappingConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.ContentLinkConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.SingleMappingConfig;
 
 public interface IContentLinkManager {
     String BEAN_ID = "jpcontentlinkManager";

@@ -1,4 +1,4 @@
-package org.entando.entando.plugins.jpcontentlink.aps.system.service.config;
+package org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config;
 
 import java.util.List;
 import lombok.Data;

@@ -11,10 +11,22 @@
 * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
 * details.
  */
-package org.entando.entando.plugins.jpcontentlink.aps.system.service;
+package org.entando.entando.plugins.jpcontentlink.aps.system.service.content;
+
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyDateAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyEnumeratorAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyHyperTextAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyImageAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyMonoTextAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyNumberAttribute;
+import static org.entando.entando.plugins.jpcontentlink.aps.system.service.link.utils.AttributeHelper.copyTextAttribute;
 
 import com.agiletec.aps.system.common.entity.model.attribute.AttributeInterface;
+import com.agiletec.aps.system.common.entity.model.attribute.CompositeAttribute;
 import com.agiletec.aps.system.common.entity.model.attribute.DateAttribute;
+import com.agiletec.aps.system.common.entity.model.attribute.EnumeratorAttribute;
+import com.agiletec.aps.system.common.entity.model.attribute.HypertextAttribute;
+import com.agiletec.aps.system.common.entity.model.attribute.MonoListAttribute;
 import com.agiletec.aps.system.common.entity.model.attribute.MonoTextAttribute;
 import com.agiletec.aps.system.common.entity.model.attribute.NumberAttribute;
 import com.agiletec.aps.system.common.entity.model.attribute.TextAttribute;
@@ -24,15 +36,13 @@ import com.agiletec.plugins.jacms.aps.system.services.content.model.ContentRecor
 import com.agiletec.plugins.jacms.aps.system.services.content.model.SymbolicLink;
 import com.agiletec.plugins.jacms.aps.system.services.content.model.attribute.ImageAttribute;
 import com.agiletec.plugins.jacms.aps.system.services.content.model.attribute.LinkAttribute;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.entando.entando.ent.exception.EntException;
 import org.entando.entando.ent.util.EntLogging.EntLogFactory;
 import org.entando.entando.ent.util.EntLogging.EntLogger;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.SingleMappingConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.IContentLinkManager;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.SingleMappingConfig;
 
 /**
  * Contents manager. This implements all the methods needed to create and manage
@@ -58,7 +68,6 @@ public class ExtContentManager extends ContentManager {
     @Override
     public Content loadContent(String id, boolean onLine) throws EntException {
         Content content;
-
         content = getContentSimple(id, onLine);
 
         try {
@@ -87,12 +96,38 @@ public class ExtContentManager extends ContentManager {
 
                     if (StringUtils.isNotBlank(referencedContentId)
                             && referencedContentId.startsWith(mapping.getLinkedContentType())) {
-                        importReferencedContentAttributes(content, referencedContentId, mapping);
+                        importFromReferencedContentLink(content, referencedContentId, mapping);
                     } else {
                         logger.debug("unexpected content type for content {}, ignoring", referencedContentId);
                     }
+                } else if (targetAttribute instanceof MonoListAttribute) {
+                    final List<AttributeInterface> linkList = ((MonoListAttribute) targetAttribute).getAttributes();
+                    final String targetListAttributeName = mapping.getTargetList();
+                    final AttributeInterface targetList = content.getAttribute(targetListAttributeName);
+
+                    if (linkList == null || targetList == null) {
+                        logger.warn("the list of link OR the list of composite (or both!) is null");
+                        return content;
+                    }
+                    if (!(targetList instanceof MonoListAttribute)) {
+                        logger.warn("invalid attribute for {}, monolist expected", targetListAttributeName);
+                        return content;
+                    }
+
+                    // clean the monolist of composite before proceeding
+                    ((MonoListAttribute)targetList).getAttributes().clear();
+
+                    linkList.stream()
+                            .filter(item -> item instanceof LinkAttribute)
+                            .forEach(link -> {
+                                SymbolicLink symbolicLink = ((LinkAttribute) link).getSymbolicLink();
+                                String referencedContentId = symbolicLink.getContentDestination();
+
+                                logger.debug("handling reference to {}", referencedContentId);
+
+                                importFromReferencedContentList(targetList, referencedContentId, mapping);
+                            });
                 } else {
-                    // TODO add monolist of link support
                     throw new RuntimeException("Unsupported link attribute type "
                             + targetAttribute.getClass().getCanonicalName());
                 }
@@ -106,20 +141,104 @@ public class ExtContentManager extends ContentManager {
                 logger.debug("ignoring content type '{}' for linking", content.getTypeCode());
             }
         } catch (Throwable e) {
-            logger.error("Error while processing content id '{}' for linking", id, e);
+            logger.error("Error while processing content id '" + id + "' for linking", e);
         }
         return content;
     }
 
-    private Content importReferencedContentAttributes(Content dstContent, String srcId, SingleMappingConfig config)
+    private void importFromReferencedContentList(AttributeInterface dstMonolistAttribute, String referencedContentId, SingleMappingConfig config) {
+        if (dstMonolistAttribute instanceof MonoListAttribute
+                && StringUtils.isNotBlank(referencedContentId) && config != null) {
+            final MonoListAttribute monolist = (MonoListAttribute) dstMonolistAttribute;
+            final Content srcContent;
+
+            if (monolist == null) {
+                logger.warn("monolist attribute where to copy values into not found");
+                return;
+            }
+
+            try {
+                srcContent = getContentSimple(referencedContentId, true);
+            } catch (EntException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (srcContent == null) {
+                logger.warn("cannot proceed, content {} not found ", referencedContentId);
+                return;
+            }
+
+            // get new element
+            AttributeInterface newMonolistItem = monolist.addAttribute();
+
+            if (newMonolistItem instanceof CompositeAttribute) {
+//                ((CompositeAttribute)newMonolistItem)
+//                        .getAttributes()
+//                        .forEach(compattr -> System.out.println("~~~ " + compattr.getName()));
+                CompositeAttribute compositeAttribute = (CompositeAttribute) newMonolistItem;
+
+                // cycle the attributes as defined in the mapping
+                config.getMapping().forEach((dstAttributeName, srcAttributeName) -> {
+                    final AttributeInterface dstAttribute = compositeAttribute.getAttribute(dstAttributeName);
+                    final AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
+
+                    if (srcAttribute != null
+                            && dstAttribute != null
+                            && srcAttribute.getType().equals(dstAttribute.getType())) {
+
+                        if (srcAttribute instanceof ImageAttribute) {
+                            copyImageAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof EnumeratorAttribute) {
+                            copyEnumeratorAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof TextAttribute) {
+                            copyTextAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof DateAttribute) {
+                            copyDateAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof NumberAttribute) {
+                            copyNumberAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof  MonoTextAttribute) {
+                            copyMonoTextAttribute(dstAttribute, srcAttribute);
+                        } else if (srcAttribute instanceof HypertextAttribute) {
+                            copyHyperTextAttribute(dstAttribute, srcAttribute);
+                        } else {
+                            logger.warn("unsupported attribute type for linking '{}'", dstAttribute.getType());
+                        }
+                    } else {
+                        logger.debug("cannot proceed!");
+
+                        if (dstAttribute == null) {
+                            logger.warn("destination attribute in composite is null: " + dstAttributeName);
+                        }
+                        if (srcAttribute == null) {
+                            logger.warn("source attribute is noll: " + srcAttributeName);
+                        }
+                    }
+                });
+            } else {
+                logger.debug("expected composite attribute '{}' in monolist, cannot proceed", dstMonolistAttribute.getName());
+            }
+        } else {
+            if (dstMonolistAttribute == null) {
+                logger.debug("cannot proceed, null attribute");
+            }
+            if (StringUtils.isBlank(referencedContentId)) {
+                logger.debug("cannot proceed, null content ID ");
+            }
+            if (config == null) {
+                logger.debug("cannot proceed, null mapping");
+            }
+        }
+    }
+
+    private Content importFromReferencedContentLink(Content dstContent, String srcId, SingleMappingConfig mapping)
             throws EntException {
-        if (StringUtils.isNotBlank(srcId) && config != null) {
+        if (StringUtils.isNotBlank(srcId) && mapping != null) {
             logger.info("loading content '{}'", srcId);
             Content srcContent = getContentSimple(srcId, true);
             logger.info("loaded content '{}'", srcContent.getId());
 
             // process attributes
-            config.getMapping().forEach( (dstAttributeName, srcAttributeName) -> {
+            mapping.getMapping().forEach( (dstAttributeName, srcAttributeName) -> {
                 logger.debug("attribute '{}' of content type {}",
                         dstAttributeName, srcContent.getTypeCode());
                 // get the attribute to fill
@@ -128,15 +247,19 @@ public class ExtContentManager extends ContentManager {
                 if (dstAttribute != null) {
                     if (dstAttribute instanceof ImageAttribute) {
                         processImageAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
-                    } if (dstAttribute instanceof MonoTextAttribute) {
+                    } else if (dstAttribute instanceof EnumeratorAttribute) {
+                        processEnumeratorAttribute(srcContent, dstAttribute, srcAttributeName);
+                    } else if (dstAttribute instanceof MonoTextAttribute) {
                         processMonoTextAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
-                    }   else if (dstAttribute instanceof TextAttribute) {
+                    } else if (dstAttribute instanceof TextAttribute) {
                         processTextAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
                     } else if (dstAttribute instanceof DateAttribute) {
                         processDateAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
                     } else if (dstAttribute instanceof NumberAttribute) {
-                        processNumberAttribute(dstContent, srcContent, dstAttribute, srcAttributeName);
-                    }else {
+                        processNumberAttribute(srcContent, dstAttribute, srcAttributeName);
+                    } else if (dstAttribute instanceof HypertextAttribute) {
+                        processHypertextAttribute(srcContent, dstAttribute, srcAttributeName);
+                    } else {
                         // attribute not supported
                         logger.warn("unsupported attribute type for linking '{}'", dstAttribute.getType());
                     }
@@ -145,16 +268,27 @@ public class ExtContentManager extends ContentManager {
                             dstAttributeName, dstContent.getTypeCode());
                 }
             });
-
-
-        } else if (config == null) {
-            logger.info("no config found for content {} ", dstContent.getId());
+        } else if (mapping == null) {
+            logger.info("no config found for content '{}' ", dstContent.getId());
         } else {
             logger.warn("no content referenced through attribute '{}' of content '{}' ",
-                    config.getLinkingAttribute(),
+                    mapping.getLinkingAttribute(),
                     dstContent.getId());
         }
         return dstContent;
+    }
+
+    private void processEnumeratorAttribute(Content srcContent, AttributeInterface dstAttribute, String srcAttributeName) {
+        logger.debug("copying ENUMERATOR from attribute '{}' to '{}'", srcAttributeName,
+                dstAttribute.getName());
+        // get the src attribute to take value from
+        AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
+        // does the src attribute exist?
+        if (srcAttribute != null) {
+            copyEnumeratorAttribute(dstAttribute, srcAttribute);
+        } else {
+            logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
+        }
     }
 
     private void processTextAttribute(Content dstContent, Content srcContent, AttributeInterface dstAttribute,
@@ -165,16 +299,22 @@ public class ExtContentManager extends ContentManager {
         AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
         // does the src attribute exist?
         if (srcAttribute != null) {
-            if (srcAttribute instanceof TextAttribute) {
-                // get the text for every language
-                HashMap<String, String> testMap = new HashMap<>(((TextAttribute) srcAttribute).getTextMap());
-                // update the attribute
-                ((TextAttribute)dstAttribute).setTextMap(testMap);
-                logger.debug("TEXT copy completed successfully");
-            } else {
-                logger.error("attribute '{}' is not of the same type of attribute {} in content type '{}'", srcAttribute,
-                        dstAttribute.getName(), srcContent.getTypeCode());
-            }
+            copyTextAttribute(dstAttribute, srcAttribute);
+        } else {
+            logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
+        }
+    }
+
+
+    private void processHypertextAttribute(Content srcContent, AttributeInterface dstAttribute,
+            String srcAttributeName) {
+        logger.debug("copying HYPERTEXT from attribute '{}' to '{}'", srcAttributeName,
+                dstAttribute.getName());
+        // get the src attribute to take value from
+        AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
+        // does the src attribute exist?
+        if (srcAttribute != null) {
+            copyHyperTextAttribute(dstAttribute, srcAttribute);
         } else {
             logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
         }
@@ -188,16 +328,7 @@ public class ExtContentManager extends ContentManager {
         AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
         // does the src attribute exist?
         if (srcAttribute != null) {
-            if (srcAttribute instanceof MonoTextAttribute) {
-                // get the text for the single language
-                String tmpText = ((MonoTextAttribute) srcAttribute).getText();
-                // update the attribute
-                ((MonoTextAttribute)dstAttribute).setText(tmpText);
-                logger.debug("MONOTEXT copy completed successfully");
-            } else {
-                logger.debug("attribute '{}' is not of the same type of attribute {} in content type '{}'", srcAttribute,
-                        dstAttribute.getName(), srcContent.getTypeCode());
-            }
+            copyMonoTextAttribute(dstAttribute, srcAttribute);
         } else {
             logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
         }
@@ -211,28 +342,7 @@ public class ExtContentManager extends ContentManager {
         AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
         // does the src attribute exist?
         if (srcAttribute != null) {
-            if (srcAttribute instanceof ImageAttribute) {
-
-                ((ImageAttribute) srcAttribute).getResources().forEach((k, v) -> ((ImageAttribute) dstAttribute).setResource(v, k));
-
-                Map<String, String> altMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceAltMap());
-                ((ImageAttribute) dstAttribute).setMetadataMap("alt", altMap);
-
-                Map<String, String> descrMap = new HashMap<>(
-                        ((ImageAttribute) srcAttribute).getResourceDescriptionMap());
-                ((ImageAttribute) dstAttribute).setMetadataMap("description", descrMap);
-
-                Map<String, String> legendMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceLegendMap());
-                ((ImageAttribute) dstAttribute).setMetadataMap("legend", legendMap);
-
-                Map<String, String> titleMap = new HashMap<>(((ImageAttribute) srcAttribute).getResourceTitleMap());
-                ((ImageAttribute) dstAttribute).setMetadataMap("title", titleMap);
-
-                logger.debug("IMAGE copy completed successfully");
-            } else {
-                logger.debug("attribute '{}' is not of the same type of attribute {} in content type '{}'", srcAttribute,
-                        dstAttribute.getName(), srcContent.getTypeCode());
-            }
+            copyImageAttribute(dstAttribute, srcAttribute);
         } else {
             logger.error("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
         }
@@ -246,21 +356,14 @@ public class ExtContentManager extends ContentManager {
         AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
         // does the src attribute exist?
         if (srcAttribute != null) {
-            if (srcAttribute instanceof DateAttribute) {
-                Date tmpDate = ((DateAttribute) srcAttribute).getDate();
-
-                ((DateAttribute) dstAttribute).setDate(tmpDate);
-            logger.debug("DATE copy completed successfully");
-            } else {
-                logger.debug("attribute '{}' is not of the same type of attribute {} in content type '{}'", srcAttribute,
-                        dstAttribute.getName(), srcContent.getTypeCode());
-            }
+            copyDateAttribute(dstAttribute, srcAttribute);
         } else {
             logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
         }
     }
 
-    private void processNumberAttribute(Content dstContent, Content srcContent, AttributeInterface dstAttribute,
+
+    private void processNumberAttribute(Content srcContent, AttributeInterface dstAttribute,
             String srcAttributeName) {
         logger.debug("copying NUMBER from '{}' attribute to '{}'", srcAttributeName,
                 dstAttribute.getName());
@@ -268,15 +371,7 @@ public class ExtContentManager extends ContentManager {
         AttributeInterface srcAttribute = srcContent.getAttribute(srcAttributeName);
         // does the src attribute exist?
         if (srcAttribute != null) {
-            if (srcAttribute instanceof NumberAttribute) {
-                BigDecimal tmpNumber = ((NumberAttribute) srcAttribute).getValue();
-
-                ((NumberAttribute) dstAttribute).setValue(tmpNumber);
-            logger.debug("NUMBER copy completed successfully");
-            } else {
-                logger.debug("attribute '{}' is not of the same type of attribute {} in content type '{}'", srcAttribute,
-                        dstAttribute.getName(), srcContent.getTypeCode());
-            }
+            copyNumberAttribute(dstAttribute, srcAttribute);
         } else {
             logger.debug("attribute '{}' not present in content type '{}'", srcAttribute, srcContent.getTypeCode());
         }

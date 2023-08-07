@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import java.util.ArrayList;
 import org.apache.commons.collections.map.HashedMap;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.ContentLinkConfig;
-import org.entando.entando.plugins.jpcontentlink.aps.system.service.config.SingleMappingConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.ContentLinkConfig;
+import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.SingleMappingConfig;
 import org.junit.jupiter.api.Test;
 
 public class TestConfiguration {
