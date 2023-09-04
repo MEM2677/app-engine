@@ -47,6 +47,8 @@ import org.entando.entando.plugins.jpcontentlink.aps.system.service.link.config.
 /**
  * Contents manager. This implements all the methods needed to create and manage
  * the contents.
+ * TODO - check whether there's the need to declare in advance the referenced content type
+ * TODO - multiple configuration for a single content type
  */
 public class ExtContentManager extends ContentManager {
 
@@ -91,8 +93,8 @@ public class ExtContentManager extends ContentManager {
                         content.getId());
                 // inspect the type of the linking attribute
                 if (targetAttribute instanceof LinkAttribute) {
-                    SymbolicLink link = ((LinkAttribute) targetAttribute).getSymbolicLink();
-                    String referencedContentId = link.getContentDestination();
+                    final SymbolicLink link = ((LinkAttribute) targetAttribute).getSymbolicLink();
+                    final String referencedContentId = link.getContentDestination();
 
                     if (StringUtils.isNotBlank(referencedContentId)
                             && referencedContentId.startsWith(mapping.getLinkedContentType())) {
@@ -120,11 +122,10 @@ public class ExtContentManager extends ContentManager {
                     linkList.stream()
                             .filter(item -> item instanceof LinkAttribute)
                             .forEach(link -> {
-                                SymbolicLink symbolicLink = ((LinkAttribute) link).getSymbolicLink();
-                                String referencedContentId = symbolicLink.getContentDestination();
+                                final SymbolicLink symbolicLink = ((LinkAttribute) link).getSymbolicLink();
+                                final String referencedContentId = symbolicLink.getContentDestination();
 
                                 logger.debug("handling reference to {}", referencedContentId);
-
                                 importFromReferencedContentList(targetList, referencedContentId, mapping);
                             });
                 } else {
@@ -305,7 +306,6 @@ public class ExtContentManager extends ContentManager {
         }
     }
 
-
     private void processHypertextAttribute(Content srcContent, AttributeInterface dstAttribute,
             String srcAttributeName) {
         logger.debug("copying HYPERTEXT from attribute '{}' to '{}'", srcAttributeName,
@@ -362,7 +362,6 @@ public class ExtContentManager extends ContentManager {
         }
     }
 
-
     private void processNumberAttribute(Content srcContent, AttributeInterface dstAttribute,
             String srcAttributeName) {
         logger.debug("copying NUMBER from '{}' attribute to '{}'", srcAttributeName,
@@ -386,7 +385,6 @@ public class ExtContentManager extends ContentManager {
             throw new EntException("Error while loading content : id " + id, e);
         }
     }
-
 
     public void setContentlinkManager(IContentLinkManager contentlinkManager) {
         this.contentlinkManager = contentlinkManager;

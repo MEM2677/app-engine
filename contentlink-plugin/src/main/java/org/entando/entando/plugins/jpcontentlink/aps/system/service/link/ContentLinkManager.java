@@ -63,7 +63,6 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
                         .stream()
                         .filter(mapping -> mapping.isActive())
                         .forEach(mapping -> logger.info(" content type linking enabled for type '{}'", mapping.getTargetContentType()));
-
             } else {
                 logger.warn("** Content link plugin disabled **");
             }
@@ -86,7 +85,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
 
     @Override
     public Optional<SingleMappingConfig> getMappingConfigurationByReferencingContentType(String type) {
-        return config != null ? config.getContentTypes()
+        return (config != null && config.getContentTypes() != null) ? config.getContentTypes()
                 .stream()
                 .filter(types -> StringUtils.isNotBlank(types.getTargetContentType())
                         && types.getTargetContentType().equals(type))
@@ -95,7 +94,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
 
     @Override
     public Optional<SingleMappingConfig> getMappingConfigurationByReferencedContentType(String type) {
-        return config != null ? config.getContentTypes()
+        return (config != null && config.getContentTypes() != null) ? config.getContentTypes()
                 .stream()
                 .filter(types -> StringUtils.isNotBlank(types.getLinkedContentType())
                         && types.getLinkedContentType().equals(type))
