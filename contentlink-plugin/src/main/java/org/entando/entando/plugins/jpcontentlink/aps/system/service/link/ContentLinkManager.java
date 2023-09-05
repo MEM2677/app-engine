@@ -61,7 +61,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
             if (config.isEnabled()) {
                 config.getContentTypes()
                         .stream()
-                        .filter(mapping -> mapping.isActive())
+                        .filter(SingleMappingConfig::isActive)
                         .forEach(mapping -> logger.info(" content type linking enabled for type '{}'", mapping.getTargetContentType()));
             } else {
                 logger.warn("** Content link plugin disabled **");
@@ -71,6 +71,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
             defaultCfg.setEnabled(false);
             setConfig(defaultCfg);
             logger.error("Error loading configuration: " + t.getMessage());
+            throw t;
         }
     }
 
@@ -129,9 +130,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
                             ((ContentServiceUtilizer) this.getContentService()).getContentUtilizer(contentId);
 
                     if (utilizers != null && !utilizers.isEmpty()) {
-                        utilizers.forEach(utilizer -> {
-                            evictContent(utilizer.getId());
-                        });
+                        utilizers.forEach(utilizer -> evictContent(utilizer.getId()));
                     }
                 });
     }
