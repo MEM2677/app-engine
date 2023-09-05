@@ -66,7 +66,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
             } else {
                 logger.warn("** Content link plugin disabled **");
             }
-        } catch (Throwable t) {
+        } catch (Exception t) {
             ContentLinkConfig defaultCfg = new ContentLinkConfig();
             defaultCfg.setEnabled(false);
             setConfig(defaultCfg);
@@ -74,12 +74,16 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
         }
     }
 
-    protected void loadConfig() throws Throwable {
+    protected void loadConfig() throws Exception {
         XmlMapper xmlMapper = new XmlMapper();
         String configDbString = configManager.getConfigItem(IContentLinkManager.CONFIG_ITEM);
-        ContentLinkConfig config
-                = xmlMapper.readValue(configDbString, ContentLinkConfig.class);
-        setConfig(config);
+        if (StringUtils.isNotBlank(configDbString)) {
+            ContentLinkConfig config
+                    = xmlMapper.readValue(configDbString, ContentLinkConfig.class);
+            setConfig(config);
+        } else {
+            throw new RuntimeException("Missing configuration item: " + IContentLinkManager.CONFIG_ITEM);
+        }
     }
 
 
@@ -102,7 +106,7 @@ public class ContentLinkManager extends AbstractService implements IContentLinkM
     }
 
     @Override
-    public ContentLinkConfig getConfiguration() throws Throwable {
+    public ContentLinkConfig getConfiguration() throws Exception {
         ContentLinkConfig export = new ContentLinkConfig();
         BeanUtils.copyProperties(export, getConfig());
         return export;
